@@ -31,13 +31,16 @@ def spring(position):
     return -k*(distance - length)
 
 
-@jit(fastmath=True)
+#@jit(fastmath=True)
 def pos_update(position, angle):
     F = spring(position)
     for i in range(len(pos)):
         sign = -1 if (i % 2)==0 else +1
-        position[i,0] += np.random.normal(0, 0.5)*sqrt_dt + sign*F*np.cos(angle)*dt
-        position[i,1] += np.random.normal(0, 0.5)*sqrt_dt + sign*F*np.sin(angle)*dt
+        if i==0 or i==(len(pos)-1):
+            position[i,0] += np.random.normal(0, 0.5)*sqrt_dt + sign*F*np.cos(angle)*dt
+            position[i,1] += np.random.normal(0, 0.5)*sqrt_dt + sign*F*np.sin(angle)*dt
+            plt.plot(pos[i,0], pos[i,1], 'ro', markersize=mks)
+        if i > 0: plt.plot([pos[i-1,0],pos[i,0]], [pos[i-1,1],pos[i,1]], 'gray', linestyle=':', marker='')
         
 
 
@@ -50,12 +53,12 @@ def pos_update(position, angle):
 
 def animate(i):
     phi = angle(pos)
-    pos_update(pos, phi)
     plt.clf()
     plt.axis(( -1*box, box, -1*box, box))
-    plt.plot(pos[0,0], pos[0,1], 'ro', markersize=mks)
-    plt.plot(pos[1,0], pos[1,1], 'bo', markersize=mks)
-    plt.plot(pos[:,0], pos[:,1], 'gray', linestyle=':', marker='')
+    pos_update(pos, phi)
+    # plt.plot(pos[0,0], pos[0,1], 'ro', markersize=mks)
+    # plt.plot(pos[1,0], pos[1,1], 'bo', markersize=mks)
+    # plt.plot(pos[:,0], pos[:,1], 'gray', linestyle=':', marker='')
 
 ani = FuncAnimation(plt.gcf(), animate, interval=100)
 plt.tight_layout()
