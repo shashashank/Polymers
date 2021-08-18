@@ -31,6 +31,7 @@ def animate(i):
         pos[i,0] += np.random.normal(0, 0.5)*sqrt_dt
         pos[i,1] += np.random.normal(0, 0.5)*sqrt_dt
 
+        # Spring Force Term
         if i!=(n-1):
             x = pos[i+1,0] - pos[i,0]
             y = pos[i+1,1] - pos[i,1]
@@ -45,6 +46,7 @@ def animate(i):
             phi1 = np.arctan2(y1, x1)
             pos[i,0] += F1*np.cos(phi1)*dt
             pos[i,1] += F1*np.sin(phi1)*dt
+        
         plt.plot(pos[i,0], pos[i,1], 'bo', markersize=mks)
         if i > 0:
             plt.plot([pos[i-1,0],pos[i,0]], [pos[i-1,1],pos[i,1]], 'gray', linestyle=':', marker='')
