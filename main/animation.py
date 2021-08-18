@@ -14,12 +14,6 @@ pos[1,0] = 0            #arbitrary initial position
 dt = 0.5                #delta_t
 sqrt_dt = np.sqrt(dt)
 
-# Calculates the angle given the x and y coordinates
-@jit(fastmath=True)
-def angle(position):
-    x = position[1,0] - position[0,0]
-    y = position[1,1] - position[0,1]
-    return np.arctan2(y,x)
 
 # Generates the force based on the displacement between the two polymer atoms
 @jit(fastmath=True)
