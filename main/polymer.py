@@ -59,7 +59,7 @@ def yes(array1, array2, time, step, length):
         for f in range(n):
             pos[f,0] = f * length
 
-        if (n)%5==0:
+        if (n)%100==0:
             plt.axis('equal')
             plt.title(str(e2e_distance((pos[0,0], pos[0,1]), (pos[n-1,0], pos[n-1,1]))))
             plt.plot(pos[:,0], pos[:,1], 'y')
@@ -69,7 +69,7 @@ def yes(array1, array2, time, step, length):
         for j in range(time):
             x[j] = animate(pos, phi, n, length, step, 0.1)
         
-        if (n)%5==0:
+        if (n)%100==0:
             plt.axis('equal')
             plt.title(str(e2e_distance(pos[0,:], pos[n-1,:])))
             plt.plot(pos[:,0], pos[:,1], 'y')
