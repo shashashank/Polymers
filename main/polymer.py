@@ -1,15 +1,14 @@
-import numpy as np
-import random
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from numba import prange,jit
 import time
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+from numba import prange,jit
 
 # Generates the force based on the displacement between the two polymer atoms
 @jit(fastmath=True, nopython=True)
-def spring(x, y, length):
+def spring(X, Y, length):
     k = 20
-    distance = np.sqrt(x*x + y*y)
+    distance = np.sqrt(X*X + Y*Y)
     return -k*(distance - length)
 
 # Calculates the end-to-end distance of the polymer
@@ -19,7 +18,7 @@ def e2e_distance(p_init, p_fin):
 
 # Evolves the points of the polymer due to thermal fluctuation
 @jit(fastmath=True, nopython=True)
-def animate(pos, phi, chain_length, bond_length=2, time_step=1e-3, std_deviation=1):
+def animate(pos, phi, chain_length, bond_length=1, time_step=1e-3, std_deviation=1):
     n = chain_length        # Length of the polymer
     length = bond_length    # distance between the two particles
     dt = time_step          # delta_t
@@ -28,8 +27,8 @@ def animate(pos, phi, chain_length, bond_length=2, time_step=1e-3, std_deviation
 
     for i in range(n):
         # Stochastic Term
-        pos[i,0] = pos[i,0] + np.random.normal(0, sigma)*sqrt_dt
-        pos[i,1] = pos[i,1] + np.random.normal(0, sigma)*sqrt_dt
+        pos[i,0] = pos[i,0] + np.random.normal(0.0, sigma)*sqrt_dt
+        pos[i,1] = pos[i,1] + np.random.normal(0.0, sigma)*sqrt_dt
 
         # Spring Force term
         if i!=(n-1):
@@ -46,38 +45,44 @@ def animate(pos, phi, chain_length, bond_length=2, time_step=1e-3, std_deviation
     return e2e_distance(pos[0,:], pos[n-1,:])
 
 
-
-@jit(fastmath=True, parallel = True)
+#@jit(fastmath=True, parallel = True)
 def yes(array1, array2, time, step, length):
     L = array1
     L1 = array2
     x = np.zeros(time)
-    for i in prange(L.shape[0]):
+    for i in range(L.shape[0]):
         n = 10 + i
         pos = np.zeros((n,2))   # position array
         phi = np.zeros(1)     # angle
 
         # Setting the IC
-        for f in range(len(pos)):
+        for f in range(n):
             pos[f,0] = f * length
+
+        if (n)%5==0:
+            plt.axis('equal')
+            plt.title(str(e2e_distance((pos[0,0], pos[0,1]), (pos[n-1,0], pos[n-1,1]))))
+            plt.plot(pos[:,0], pos[:,1], 'y')
+            plt.savefig("Plots/Fig"+str(n)+"F.png")
+            plt.close()
         
         for j in range(time):
-            x[j] = animate(pos, phi, n, length, step, 1)
-            if j==0: L1[i] = x[j]
+            x[j] = animate(pos, phi, n, length, step, 0.1)
+        
+        if (n)%5==0:
+            plt.axis('equal')
+            plt.title(str(e2e_distance(pos[0,:], pos[n-1,:])))
+            plt.plot(pos[:,0], pos[:,1], 'y')
+            plt.savefig("Plots/Fig"+str(n)+"L.png")
+            plt.close()
         L[i] = np.sum(x)/time
+        L1[i] = x[0]
     return L
-        #f = int(np.floor(n/2))
-        #box = 20
-        # plt.axis((pos[f,0] - box, pos[f,0] + box, pos[f,1] - box, pos[f,1]+ box))
-        # for k in range(n):
-        #     plt.plot(pos[k,0], pos[k,1], 'bo', markersize=5)
-        #     if k > 0: plt.plot([pos[k-1,0],pos[k,0]], [pos[k-1,1],pos[k,1]], 'gray', linestyle=':', marker='')
-        # plt.show()
 
 n = 100
 l = 2                  # bond length
-t = int(1e8)           # simulation time
-s = 1e-5               # step length
+t = int(1e6)           # simulation time
+s = 1e-3               # step length
 L = np.zeros(n)        
 L1 = np.zeros(n)       # shows initial E2E dist
 
