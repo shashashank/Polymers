@@ -11,7 +11,7 @@ phi = np.zeros([1])     # angle
 length = 1              # distance between the two particles
 mks = 5                 # size of the two particles
 pos[1,0] = 0            # arbitrary initial position
-dt = 1e-3                # delta_t
+dt = 1e-2                # delta_t
 sqrt_dt = np.sqrt(dt)
 
 
@@ -42,8 +42,8 @@ def animate(i):
     for i in range(n):
 
         # Stochastic Term
-        pos[i,0] += np.random.normal(0, 1)*sqrt_dt
-        pos[i,1] += np.random.normal(0, 1)*sqrt_dt
+        pos[i,0] += np.random.normal(0, 0.1)*sqrt_dt
+        pos[i,1] += np.random.normal(0, 0.1)*sqrt_dt
 
         # Spring Force term
         if i!=(n-1):
@@ -57,11 +57,11 @@ def animate(i):
         pos[i,0] += F*np.cos(phi)*dt
         pos[i,1] += F*np.sin(phi)*dt
 
-        print("End to end distance is:%8.4f" % e2e_distance(pos[0,:], pos[n-1,:]))
+        #print("End to end distance is:%8.4f" % e2e_distance(pos[0,:], pos[n-1,:]))
         plt.plot(pos[i,0], pos[i,1], 'bo', markersize=mks)
         if i > 0:
             plt.plot([pos[i-1,0],pos[i,0]], [pos[i-1,1],pos[i,1]], 'gray', linestyle=':', marker='')
 
-ani = FuncAnimation(plt.gcf(), animate, interval=1e-3)
+ani = FuncAnimation(plt.gcf(), animate, interval=1)
 plt.tight_layout()
 plt.show()
