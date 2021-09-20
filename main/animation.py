@@ -5,20 +5,21 @@ from matplotlib.animation import FuncAnimation
 from numba import prange,jit
 
 box = 10                # side length of the plot
-n=5                     # Length of the polymer
+n=10                    # Length of the polymer
 pos = np.zeros([n,2])   # position array
 phi = np.zeros([1])     # angle
-length = 2              # distance between the two particles
+length = 1              # distance between the two particles
 mks = 5                 # size of the two particles
 pos[1,0] = 0            # arbitrary initial position
-dt = 0.5                # delta_t
+dt = 1e-3                # delta_t
 sqrt_dt = np.sqrt(dt)
 
 
-# Generates the force based on the displacement between the two polymer atoms
+# Generates the f
+# orce based on the displacement between the two polymer atoms
 @jit(fastmath=True)
 def spring(x, y):
-    k = 2
+    k = 20
     distance = np.sqrt(x**2 + y**2)
     return -k*(distance - length)
 
@@ -31,11 +32,18 @@ def e2e_distance(p_init, p_fin):
 def animate(i):
     plt.clf()
     plt.axis(( -box, box, -box, box))
+
+    # Setting the IC
+    j = - np.floor(len(pos)/2)
+    for i in range(len(pos)):
+        pos[i,0] = j*length
+        j +=1
+
     for i in range(n):
 
         # Stochastic Term
-        pos[i,0] += np.random.normal(0, 0.5)*sqrt_dt
-        pos[i,1] += np.random.normal(0, 0.5)*sqrt_dt
+        pos[i,0] += np.random.normal(0, 1)*sqrt_dt
+        pos[i,1] += np.random.normal(0, 1)*sqrt_dt
 
         # Spring Force term
         if i!=(n-1):
@@ -54,6 +62,6 @@ def animate(i):
         if i > 0:
             plt.plot([pos[i-1,0],pos[i,0]], [pos[i-1,1],pos[i,1]], 'gray', linestyle=':', marker='')
 
-ani = FuncAnimation(plt.gcf(), animate, interval=100)
+ani = FuncAnimation(plt.gcf(), animate, interval=1e-3)
 plt.tight_layout()
 plt.show()
