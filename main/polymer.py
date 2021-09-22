@@ -62,7 +62,7 @@ def yes(array1, array2, time, step, length):
         
         f = j = 0
         # Setting the IC
-        for f in range(n):
+        for f in prange(n):
             pos[f,0] = f * length
         L1[i] = e2e_distance(pos[0,:], pos[n-1,:])
             
