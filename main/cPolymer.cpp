@@ -13,13 +13,13 @@
 #include <sys/stat.h>   //mkdir
 #include <iomanip> // setprecision
 #include <experimental/filesystem>
-//#include <omp.h>
-#include "poly_param.c"
+#include <omp.h>
+using namespace std;
 
-// #include "extra.h"
+#include "poly_param.c"
+#include "extra.h"
 
 clock_t start = clock();
-using namespace std;
 
 constexpr double pi = 22.000 / 7;
 
@@ -43,8 +43,6 @@ void initialize(void);
 void write_VMD_data(ostream& os, int it);
 void noise(void);
 double e2e_distance(double x_ini, double x_fin, double y_ini, double y_fin);
-void extractConfig(void);
-void importConfig();
 
 
 int main(int argc, char *argv[])
@@ -54,17 +52,16 @@ int main(int argc, char *argv[])
 	ofstream o("vmd_data_poly.xyz");
 
 	int skip = 0;
-	
 	if (std::experimental::filesystem::v1::exists("vmd_data_poly_old.xyz")){
 	  skip = 1;
 	  extractConfig();
-	  importConfig();
+	  importConfig(Px, Py);
 	}
 	else initialize();
 
 	out << "  no of particles::" << N << "  length: l:: " << l << endl;
 
-	ete << "T" << "\t" << "D" << endl; 
+	ete << "T" << "\t" << "D" << endl;
 
 	double frame = par_maxFrame;
 	int tn = MAXIT / (frame * 10);
@@ -112,7 +109,8 @@ double animate(void){
 
 	Pxi = 0.0;
 	Pyi = 0.0;
-	
+    omp_set_num_threads(8);
+#pragma omp parallel for schedule(guided, 10)
 	for (int i=0; i<N; i++)
 	{
 	  Fx[i] = 0.0; Fy[i] = 0.0;
@@ -150,14 +148,13 @@ double animate(void){
 	    }
 	  }
 	}
-	
+#pragma omp parallel for schedule(static, 100)
 	for (int i=0; i<N; i++){
-	  Px[i] += (forceX + intrX[i])*dt + gau_dist(generator)*sqrt_dt;
-	  Py[i] += (forceY + intrY[i])*dt + gau_dist(generator)*sqrt_dt;
+	  Px[i] += (Fx[i] + intrX[i])*dt + gau_dist(generator)*sqrt_dt;
+	  Py[i] += (Fy[i] + intrY[i])*dt + gau_dist(generator)*sqrt_dt;
 	  intrX[i] = 0.0;
 	  intrY[i] = 0.0;
 	}
-	
 	return e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]);
 }
 
@@ -187,46 +184,4 @@ double e2e_distance(double x_ini, double x_fin, double y_ini, double y_fin)
 	double X = x_fin - x_ini;
 	double Y = y_fin - y_ini;
 	return sqrt(X*X + Y*Y);
-}
-
-void extractConfig(){
-  ifstream infile("vmd_data_poly_old.xyz");
-  ofstream outfile("config");
-  vector<string> fileLines;
-  string line;
-  while (getline(infile, line)){
-    fileLines.push_back(line);
-  }
-  istringstream iss(fileLines[0]);
-  int N;
-  iss >> N;
-  cout << N << endl;
-  int fileLength = size(fileLines);
-  int iters = fileLength / (N + 2);
-  int t_pos = (iters - 1) * (N + 2);
-  char s;
-  double x, y;
-  int count = 0;
-  for (int i = t_pos + 2; i < fileLength; ++i){
-    istringstream tmp(fileLines[i]);
-    tmp >> s >> x >> y;
-    outfile << x << "\t" << y << endl;
-    ++count;
-  }
-  cout << count <<endl;
-}
-
-void importConfig(){
-  ifstream infile("config");
-  vector<string> fileLines;
-  string line;
-  int i = 0;
-  double x, y;
-  while (getline(infile, line)){
-    istringstream iss(line);
-    iss >> x >> y;
-    Px[i] = x;
-    Py[i] = y;
-    ++i;
-  }
 }

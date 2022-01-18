@@ -5,7 +5,7 @@
 #include<fstream>
 #include<vector>
 #include<random>
-#include"strtk.hpp"
+//#include"strtk.hpp"
 #include<ctime>
 #include<dirent.h>
 #include<string> //for string
@@ -14,13 +14,13 @@
 #include <sys/stat.h>   //mkdir
 #include <iomanip> // setprecision
 
-#include "extra.h"
 using namespace std;
+#include "extra.h"
 
-void extractConfig(void);
-void importConfig(vector<double>, vector<double>);
+//void extractConfig(void);
+//void importConfig(vector<double>, vector<double>);
 
-void extractConfig(){
+void extractConfig(void){
   ifstream infile("vmd_data_poly_old.xyz");
   ofstream outfile("config");
   vector<string> fileLines;
@@ -47,7 +47,7 @@ void extractConfig(){
   cout << count <<endl;
 }
 
-void importConfig(vector<double>& Px, vector<double>& Py){
+void importConfig(vector<double>& X, vector<double>& Y){
   ifstream infile("config");
   vector<string> fileLines;
   string line;
@@ -56,17 +56,8 @@ void importConfig(vector<double>& Px, vector<double>& Py){
   while (getline(infile, line)){
     istringstream iss(line);
     iss >> x >> y;
-    Px[i] = x;
-    Py[i] = y;
+    X[i] = x;
+    Y[i] = y;
     ++i;
   }
 }
-
-// std::string line;
-// while (std::getline(infile, line))
-// {
-//     std::istringstream iss(line);
-//     int a, b;
-//     if (!(iss >> a >> b)) { break; } // error
-//     // process pair (a,b)
-// }
