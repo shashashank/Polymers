@@ -72,9 +72,9 @@ def yes(array1, array2, time, step, length):
         L[i] = np.sum(x)/time
     return L
 
-n = 10
+n = 100
 l = 1                  # bond length
-t = int(1e6)           # simulation time
+t = int(1e10)           # simulation time
 s = 1e-3               # step length
 k = 500                # spring constant
 L = np.zeros(n)        
