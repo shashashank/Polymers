@@ -12,10 +12,12 @@
 #include <sys/types.h> //mkdir
 #include <sys/stat.h>   //mkdir
 #include <iomanip> // setprecision
+#include <experimental/filesystem>
 #include "param.c"
 clock_t start = clock();
 
 using namespace std;
+#include "extra.h"
 
 int N1 = par_N;
 double phi = par_phi;
@@ -272,8 +274,12 @@ int main(int argc, char *argv[])
 
 	double frame = par_maxFrame;
 	int tn = MAXIT / frame;
-
-	initialize_square_lattice();
+	
+	if (std::experimental::filesystem::v1::exists("vmd_data_old.xyz")){
+	  extractConfig("vmd_data_old.xyz", "config", 3);
+	  importConfig("config", x, y, theta);
+	}
+	else initialize_square_lattice();
 	maps();
 	for (int it = 0; it < MAXIT; it++)
 	{
