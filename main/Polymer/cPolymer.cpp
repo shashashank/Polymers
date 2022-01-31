@@ -51,20 +51,21 @@ int main(int argc, char *argv[])
 	start_time = omp_get_wtime();
 	ofstream out("data_poly.xyz");
 	ofstream o("vmd_data_poly.xyz");
+    ofstream e2e("e2e.d");
 	string old = "old.xyz";
 
 	int skip = 0;
 	if (std::experimental::filesystem::v1::exists(old)){
+        cout << "Importing configuration from older file." << endl;
 		skip = 1;
-	  	extractConfig(old, Px, Py);
+	  	extractConfig(old, Px, Py, 1);
 	}
 	else initialize();
 
 	out << "  no of particles::" << N << "  length: l:: " << l << endl;
 
 	double frame = par_maxFrame;
-	int tn = MAXIT / (frame * 10);
-	double e2eVal = e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]);
+	int tn = MAXIT / frame;
 
 	if (skip==0){
 		for (int it = 0; it < MAXIT; it++){
@@ -81,6 +82,7 @@ int main(int argc, char *argv[])
 	for (int it = 0; it < MAXIT; it++){
 		if ((it % tn == 0) && (writeFlag==1)){
 			write_VMD_data(o, it);
+            e2e << e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]) << endl;
 		}
 		animate();
 	}
@@ -91,7 +93,7 @@ int main(int argc, char *argv[])
 		omp_destroy_lock(&iYLock[ilock]);
 	}
 
-	out << "Time elapsed: " << ( (omp_get_wtime() - start_time) / (double) CLOCKS_PER_SEC) << endl;
+	out << "Time elapsed: " << (omp_get_wtime() - start_time) << endl;
 }
 
 
@@ -110,10 +112,10 @@ void animate(void){
 	double phip, phin, phisi, phisj;
 
 	omp_set_dynamic(1);
-	omp_set_num_threads(omp_get_max_threads());
+	omp_set_num_threads(6);//omp_get_max_threads());
 
 // add schedule(guided, 10) for longer chains
-#pragma omp parallel for
+#pragma omp parallel for schedule(static, 10)
 	for (int i=0; i<N; i++)
 	{
 	  	Fx[i] = 0.0; Fy[i] = 0.0;
@@ -123,6 +125,9 @@ void animate(void){
 	  	if (i!=(N-1)){
 			SForce(i, i+1); //spring force from next particle in chain
 		}
+    }
+#pragma omp parallel for schedule(guided, 10)
+    for (int i=0; i<N; i++){
 		for (int j=i+2; j<N; j++){
 			double apart = e2e_distance(Px[i], Px[j], Py[i], Py[j])+ intrFlag;
 			if (apart<radius){
@@ -131,7 +136,7 @@ void animate(void){
 		}
 	}
 // add schedule(static, 100) for longer chains
-#pragma omp parallel for 
+#pragma omp parallel for schedule(static, 10)
 	for (int i=0; i<N; i++){
 		Px[i] += (Fx[i] + intrX[i])*dt + gau_dist(generator)*sqrt_dt;
 		Py[i] += (Fy[i] + intrY[i])*dt + gau_dist(generator)*sqrt_dt;
