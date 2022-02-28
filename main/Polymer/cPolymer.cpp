@@ -71,17 +71,13 @@ int main(int argc, char *argv[]){
     out << "The total number of timesteps: " <<  parMaxIT
         << "/" << dt << " = " << MAXIT << endl;
 
- START:if (std::experimental::filesystem::v1::exists(old)){
+    if (std::experimental::filesystem::v1::exists(old)){
         cout << "Importing configuration from older file." << endl;
         extractConfig(old, Px, Py, 1);
 	}
 	else initialize();
 
-    for (int it = 0; it <MAXIT/10; it++){
-        animate();
-    }
-
-    int e2eCount = 0;
+ START:int e2eCount = 0;
     double place2eHolder = 0;
 	for (int it = 0; it < MAXIT; it++){
 		if ((it % tn == 0) && (writeFlag==1)){
@@ -94,6 +90,7 @@ int main(int argc, char *argv[]){
     // Loop simulates multiple trials of the polymer evolution 
     if (pT < (parTrials-1)){
         pT++;
+        printf("Trial: %i \n", pt);
         goto START;
 	}
 
