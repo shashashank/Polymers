@@ -67,9 +67,11 @@ int main(int argc, char *argv[]){
 		omp_init_lock(&iYLock[ilock]);
 	}
 
- START:out << "  no of particles::" << N << "  length: l:: " << l << endl;
+    out << "Number of particles: " << N << endl;
+    out << "The total number of timesteps: " <<  parMaxIT
+        << "/" << dt << " = " << tn << endl;
 
-	if (std::experimental::filesystem::v1::exists(old)){
+ START:if (std::experimental::filesystem::v1::exists(old)){
         cout << "Importing configuration from older file." << endl;
         extractConfig(old, Px, Py, 1);
 	}
@@ -85,7 +87,7 @@ int main(int argc, char *argv[]){
 		}
 		animate();
 	}
-
+    // Loop simulates multiple trials of the polymer evolution 
     if (pT < (parTrials-1)){
         pT++;
         goto START;
