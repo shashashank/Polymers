@@ -21,21 +21,24 @@ using namespace std;
 
 constexpr double pi = 22.000 / 7;
 
+double dt = 1e-3;
+double radius = 1.5;
+double l = 1.0;
+int k = 100;
+double sqrt_dt = sqrt(dt);
+double MAXIT =  parMaxIT / dt;
+double start_time;
+double frame = parMaxFrame;
+int tn = MAXIT / frame;
+
 mt19937 generator(time(NULL));
 normal_distribution<double> gau_dist(0.0, 1.0);
 
 vector<double> Px(N), Py(N);
 vector<double> Fx(N), Fy(N);
 vector<double> intrX(N), intrY(N);
+vector<vector<double>> e2eArray(parTrials, vector<double>(frame));
 vector<omp_lock_t> iXLock(N), iYLock(N);
-double dt = 1e-3;
-double radius = 1.5;
-double l = 1.0;
-int k = 100;
-double sqrt_dt = sqrt(dt);
-double MAXIT =  par_maxIT / dt;
-double start_time;
-
 
 double spring(double x, double y, double length, int spring_constant);
 void animate(void);
@@ -45,33 +48,24 @@ void noise(void);
 double e2e_distance(double x_ini, double x_fin, double y_ini, double y_fin);
 void SForce(int P1, int P2);
 void IForce(int P1, int P2);
+void writeE2eData(ostream& os, int it);
 
-int main(int argc, char *argv[])
-{
-	start_time = omp_get_wtime();
+int main(int argc, char *argv[]){
+    int pT = 0;
+    start_time = omp_get_wtime();
 	ofstream out("data_poly.xyz");
 	ofstream o("vmd_data_poly.xyz");
-    ofstream e2e("e2e.d");
+	ofstream e2e("e2e.d");
 	string old = "old.xyz";
 
-	int skip = 0;
 	if (std::experimental::filesystem::v1::exists(old)){
         cout << "Importing configuration from older file." << endl;
-		skip = 1;
-	  	extractConfig(old, Px, Py, 1);
+        extractConfig(old, Px, Py, 1);
 	}
 	else initialize();
 
-	out << "  no of particles::" << N << "  length: l:: " << l << endl;
-
-	double frame = par_maxFrame;
-	int tn = MAXIT / frame;
-
-	if (skip==0){
-		for (int it = 0; it < MAXIT; it++){
-			animate();
-		}
-	}
+    omp_set_dynamic(1);
+	omp_set_num_threads(omp_get_max_threads());
 
 #pragma omp parallel for
 	for (int ilock = 0; ilock<N; ilock++){
@@ -79,23 +73,34 @@ int main(int argc, char *argv[])
 		omp_init_lock(&iYLock[ilock]);
 	}
 
+ START:out << "  no of particles::" << N << "  length: l:: " << l << endl;
+
+    int e2eCount = 0;
+    double place2eHolder = 0;
 	for (int it = 0; it < MAXIT; it++){
 		if ((it % tn == 0) && (writeFlag==1)){
-			write_VMD_data(o, it);
-            e2e << e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]) << endl;
+            write_VMD_data(o, it);
+            e2eArray[pT][e2eCount] = e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]);
+            e2eCount++;
 		}
 		animate();
 	}
 
-#pragma omp parallel for
+    if (pT < (parTrials-1)){
+        pT++;
+        goto START;
+	}
+
+    #pragma omp parallel for
 	for (int ilock = 0; ilock<N; ilock++){
 		omp_destroy_lock(&iXLock[ilock]);
 		omp_destroy_lock(&iYLock[ilock]);
 	}
-
+    writeE2eData(e2e, e2eCount);
+    printf("pT = %d, and e2eCount = %d \n", pT, e2eCount);
 	out << "Time elapsed: " << (omp_get_wtime() - start_time) << endl;
-}
 
+}
 
 void initialize(void){
 	for (int i=0; i<N; i++)
@@ -106,16 +111,8 @@ void initialize(void){
 }
 
 void animate(void){
-	double Fp, Fn, Fxi, Fyi, Fsi, Fsj;
-	double xp, xn, xsi, xsj, yp, yn, ysi, ysj;
-	double Pxi, Pyi;
-	double phip, phin, phisi, phisj;
-
-	omp_set_dynamic(1);
-	omp_set_num_threads(6);//omp_get_max_threads());
-
 // add schedule(guided, 10) for longer chains
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static, 8)
 	for (int i=0; i<N; i++)
 	{
 	  	Fx[i] = 0.0; Fy[i] = 0.0;
@@ -126,7 +123,7 @@ void animate(void){
 			SForce(i, i+1); //spring force from next particle in chain
 		}
     }
-#pragma omp parallel for schedule(guided, 10)
+#pragma omp parallel for schedule(guided, 8)
     for (int i=0; i<N; i++){
 		for (int j=i+2; j<N; j++){
 			double apart = e2e_distance(Px[i], Px[j], Py[i], Py[j])+ intrFlag;
@@ -136,7 +133,7 @@ void animate(void){
 		}
 	}
 // add schedule(static, 100) for longer chains
-#pragma omp parallel for schedule(static, 10)
+#pragma omp parallel for schedule(static, 8)
 	for (int i=0; i<N; i++){
 		Px[i] += (Fx[i] + intrX[i])*dt + gau_dist(generator)*sqrt_dt;
 		Py[i] += (Fy[i] + intrY[i])*dt + gau_dist(generator)*sqrt_dt;
@@ -144,8 +141,6 @@ void animate(void){
 		intrY[i] = 0.0;
 	}
 }
-
-
 double spring(double x, double y, double length, int spring_constant) {
     k = double(spring_constant);
     double distance = sqrt(x*x + y*y);
@@ -203,6 +198,24 @@ void write_VMD_data(ostream& os, int it)
 	os.flush();
 }
 
+void writeE2eData(ostream& os, int it)
+{
+   	os.setf(ios::fixed, ios::floatfield);
+	os.precision(5);
+    char text;
+	for (int i = 0; i < it; i++)
+	{
+        for (int j = 0; j < parTrials; j++){
+            os << e2eArray[j][i];
+            if (j < parTrials-1){
+                os << '\t';
+            }else{
+                os << endl;
+            }
+        }
+	}
+	os.flush();
+}
 double e2e_distance(double x_ini, double x_fin, double y_ini, double y_fin)
 {
 	double X = x_fin - x_ini;
