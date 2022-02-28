@@ -58,12 +58,6 @@ int main(int argc, char *argv[]){
 	ofstream e2e("e2e.d");
 	string old = "old.xyz";
 
-	if (std::experimental::filesystem::v1::exists(old)){
-        cout << "Importing configuration from older file." << endl;
-        extractConfig(old, Px, Py, 1);
-	}
-	else initialize();
-
     omp_set_dynamic(1);
 	omp_set_num_threads(omp_get_max_threads());
 
@@ -74,6 +68,12 @@ int main(int argc, char *argv[]){
 	}
 
  START:out << "  no of particles::" << N << "  length: l:: " << l << endl;
+
+	if (std::experimental::filesystem::v1::exists(old)){
+        cout << "Importing configuration from older file." << endl;
+        extractConfig(old, Px, Py, 1);
+	}
+	else initialize();
 
     int e2eCount = 0;
     double place2eHolder = 0;
