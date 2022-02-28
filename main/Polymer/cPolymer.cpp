@@ -69,13 +69,17 @@ int main(int argc, char *argv[]){
 
     out << "Number of particles: " << N << endl;
     out << "The total number of timesteps: " <<  parMaxIT
-        << "/" << dt << " = " << tn << endl;
+        << "/" << dt << " = " << MAXIT << endl;
 
  START:if (std::experimental::filesystem::v1::exists(old)){
         cout << "Importing configuration from older file." << endl;
         extractConfig(old, Px, Py, 1);
 	}
 	else initialize();
+
+    for (int it = 0; it <MAXIT/10; it++){
+        animate();
+    }
 
     int e2eCount = 0;
     double place2eHolder = 0;
