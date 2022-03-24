@@ -1,34 +1,27 @@
-#include<cstdlib>
-#include<cstdio>
-#include<cmath>
-#include<iostream>
-#include<fstream>
-#include<vector>
-#include<random>
-//#include"strtk.hpp"
-#include<ctime>
-#include<dirent.h>
-#include<string> //for string
-#include<sstream> //covert into to string
-#include <sys/types.h> //mkdir
-#include <sys/stat.h>   //mkdir
-#include <iomanip> // setprecision
-
-using namespace std;
 #include "extra.h"
 
-void extractConfig(string oldFile, vector<double>& X, vector<double>& Y, int R){
-    ifstream infile(oldFile);
-    vector<string> fileLines;
+
+// Reads contents of file "file" to array fileLines and returns its length
+int readFile(string file, vector<string>& data){
+    ifstream infile(file);
     string line;
-    int N, t_pos, fileLength, iters;
     while (getline(infile, line)){
-        fileLines.push_back(line);
+        data.push_back(line);
     }
+    return data.size();
+}
+
+// Imports to supplied vectors X and Y the final (R=0)
+//  or random configuration from data file "oldFile"
+void extractConfig(string oldFile, vector<double>& X, vector<double>& Y, int R){
+    int N, t_pos, fileLength, iters;
+    vector<string> fileLines;
+    
+    fileLength = readFile(oldFile, fileLines);
+
     istringstream iss(fileLines[0]);
     iss >> N;
     printf("Total number of particles: %i \n", N);
-    fileLength = fileLines.size();
     iters = fileLength / (N + 2);
     if (R==0){
         t_pos = (iters - 1) * (N + 2);
@@ -50,3 +43,4 @@ void extractConfig(string oldFile, vector<double>& X, vector<double>& Y, int R){
     }
     printf("Number of particles initialised: %i \n", count);
 }
+
