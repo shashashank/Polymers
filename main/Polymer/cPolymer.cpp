@@ -13,31 +13,31 @@ double start_time;              // stores time of start of execution
 double frame = parMaxFrame;     // number of times to save data
 int tn = MAXIT / frame;
 
-mt19937 generator(time(NULL));
-normal_distribution<double> gau_dist(0.0, 1.0);
+std::mt19937 generator(time(NULL));
+std::normal_distribution<double> gau_dist(0.0, 1.0);
 
-vector<double> Px(N), Py(N);
-vector<double> Fx(N), Fy(N);
-vector<double> intrX(N), intrY(N);
-vector<double> e2eArray(frame);
-vector<omp_lock_t> iXLock(N), iYLock(N);
+std::vector<double> Px(N), Py(N);
+std::vector<double> Fx(N), Fy(N);
+std::vector<double> intrX(N), intrY(N);
+std::vector<double> e2eArray(frame);
+std::vector<omp_lock_t> iXLock(N), iYLock(N);
 
 double spring(double x, double y, double length, int spring_constant);
 void animate(void);
 void initialize(void);
-void write_VMD_data(ostream& os, int it);
+void write_VMD_data(std::ostream& os, int it);
 void noise(void);
 double e2e_distance(double x_ini, double x_fin, double y_ini, double y_fin);
 void SForce(int P1, int P2);
 void IForce(int P1, int P2);
-void writeE2eData(ostream& os, int it);
+void writeE2eData(std::ostream& os, int it);
 
 int main(int argc, char *argv[]){
     start_time = omp_get_wtime();
-	ofstream out("data_poly.xyz");
-	ofstream o("vmd_data_poly.xyz");
-	ofstream e2e("e2e.d");
-	string old = "old.xyz";
+	std::ofstream out("data_poly.xyz");
+	std::ofstream o("vmd_data_poly.xyz");
+	std::ofstream e2e("e2e.d");
+	std::string old = "old.xyz";
 
     omp_set_dynamic(1);
 	omp_set_num_threads(omp_get_max_threads());
@@ -48,12 +48,12 @@ int main(int argc, char *argv[]){
 		omp_init_lock(&iYLock[ilock]);
 	}
 
-    out << "Number of particles: " << N << endl;
+    out << "Number of particles: " << N << std::endl;
     out << "The total number of timesteps: " <<  parMaxIT
-        << "/" << dt << " = " << MAXIT << endl;
+        << "/" << dt << " = " << MAXIT << std::endl;
 
     if (std::experimental::filesystem::v1::exists(old)){
-        cout << "Importing configuration from older file." << endl;
+        std::cout << "Importing configuration from older file." << std::endl;
         extractConfig(old, Px, Py, 1);
 	}
 	else initialize();
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]){
 	for (int it = 0; it < MAXIT; it++){
 		if ((it % tn == 0) && (writeFlag==1)){
             write_VMD_data(o, it);
-			e2e << e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]) << endl;
+			e2e << e2e_distance(Px[0], Px[N-1], Py[0], Py[N-1]) << std::endl;
 		}
 		animate();
 	}
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
 		omp_destroy_lock(&iYLock[ilock]);
 	}
 	
-	out << "Time elapsed: " << (omp_get_wtime() - start_time) << endl;
+	out << "Time elapsed: " << (omp_get_wtime() - start_time) << std::endl;
 
 }
 
@@ -164,15 +164,15 @@ void IForce(int P1, int P2){
 	omp_unset_lock(&iYLock[P2]);
 }
 
-void write_VMD_data(ostream& os, int it)
+void write_VMD_data(std::ostream& os, int it)
 {
-	os << N << endl;
-	os << it << endl;
-	os.setf(ios::fixed, ios::floatfield);
+	os << N << std::endl;
+	os << it << std::endl;
+	os.setf(std::ios::fixed, std::ios::floatfield);
 	os.precision(5);
 	for (int i = 0; i < N; i++)
 	{
-		os << "s " << Px[i] << " " << Py[i] << endl;
+		os << "s " << Px[i] << " " << Py[i] << std::endl;
 	}
 	os.flush();
 }

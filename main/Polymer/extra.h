@@ -15,8 +15,6 @@
 #include <experimental/filesystem>
 #include <omp.h>
 
-using namespace std;
-
-int readFile(string file, vector<string>& data);
-void extractConfig(string oldFile, vector<double>& X, vector<double>& Y, int R);
+int readFile(std::string file, std::vector<std::string>& data);
+void extractConfig(std::string oldFile, std::vector<double>& X, std::vector<double>& Y, int R);
 
