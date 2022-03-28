@@ -276,8 +276,7 @@ int main(int argc, char *argv[])
 	int tn = MAXIT / frame;
 	
 	if (std::experimental::filesystem::v1::exists("vmd_data_old.xyz")){
-	  extractConfig("vmd_data_old.xyz", "config", 3);
-	  importConfig("config", x, y, theta);
+	  extractConfig("vmd_data_old.xyz", x, y, theta);
 	}
 	else initialize_square_lattice();
 	maps();

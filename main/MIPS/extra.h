@@ -1,2 +1,23 @@
-void extractConfig(string oldFile, string newFile, int dim);
-void importConfig(string config, vector<double>& X, vector<double>& Y, vector<double>& THETA);
+#include<cstdlib>
+#include<cstdio>
+#include<cmath>
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<random>
+#include<ctime>
+#include<dirent.h>
+#include<string> //for string
+#include<sstream> //covert into to string
+#include<sys/types.h> //mkdir
+#include<sys/stat.h>   //mkdir
+#include<iomanip> // setprecision
+#include<experimental/filesystem>
+#include<omp.h>
+#include<list>
+#include<algorithm> 
+
+
+int readFile(std::string file, std::vector<std::string>& data);
+void extractConfig(std::string oldFile, std::vector<double>& X, std::vector<double>& Y, std::vector<double>& THETA);
+
