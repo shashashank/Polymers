@@ -42,12 +42,6 @@ int main(int argc, char *argv[]){
     omp_set_dynamic(1);
 	omp_set_num_threads(omp_get_max_threads());
 
-#pragma omp parallel for
-	for (int ilock = 0; ilock<N; ilock++){
-		omp_init_lock(&iXLock[ilock]);
-		omp_init_lock(&iYLock[ilock]);
-	}
-
     out << "Number of particles: " << N << std::endl;
     out << "The total number of timesteps: " <<  parMaxIT
         << "/" << dt << " = " << MAXIT << std::endl;
@@ -58,8 +52,12 @@ int main(int argc, char *argv[]){
 	}
 	else initialize();
 
-	int e2eCount = 0;
-    double place2eHolder = 0;
+#pragma omp parallel for
+	for (int ilock = 0; ilock<N; ilock++){
+		omp_init_lock(&iXLock[ilock]);
+		omp_init_lock(&iYLock[ilock]);
+	}
+
 	for (int it = 0; it < MAXIT; it++){
 		if ((it % tn == 0) && (writeFlag==1)){
             write_VMD_data(o, it);
