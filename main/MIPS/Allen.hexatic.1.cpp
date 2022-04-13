@@ -1,70 +1,56 @@
-#include<cstdlib>
-#include<cstdio>
-#include<cmath>
-#include<iostream>
-#include<fstream>
-#include<vector>
-#include<random>
-#include<ctime>
-#include<dirent.h>
-#include<string> //for string
-#include<sstream> //covert into to string
-#include <sys/types.h> //mkdir
-#include <sys/stat.h>   //mkdir
-#include <iomanip> // setprecision
-#include <experimental/filesystem>
-#include "param.c"
-clock_t start = clock();
-
-using namespace std;
+#include "hexaticMain.h"
 #include "extra.h"
+#include "polymer.h"
+#include "param.c"
 
-int N1 = par_N;
+int N1 = 125220;//par_N;
+double tt = 0.0;
 double phi = par_phi;
 double Pe = par_Pe;
 double alpha = 6;
 constexpr int sigma = 1;
+constexpr double Gamma = 1.0;
+constexpr double c = 1.0;
 
 constexpr double D = 1;
 double Dr = 3 * D / (sigma*sigma);
 
-constexpr double pi = 22.000 / 7;
-/* time limit */
+constexpr double pi = M_PI;
 constexpr double TAU = 1;
 constexpr double dt = 0.00001 * TAU;
 double MAXIT =  par_maxIT * TAU / dt;
-/*************/
-
 
 /******calculate parameter for cell list*******/
-double rcut = sigma * pow(2, 1.0 / alpha);
-int n = sqrt(N1);
-int N = n * n;
-double L = sqrt(N * pi * sigma * sigma * 0.25 / phi);
-int M = int(L / rcut);
-double a = 2 * L / (2 * n + 3);
-
-double BOXL = M * rcut;
-int ncell = M * M;
-int mapsiz = 4 * ncell;
-double A = BOXL * BOXL;
-
+double rcut=sigma*pow(2,1.0/alpha);
+int n;//=sqrt(N1);
+int N=125220;//n * n;
+double L = sqrt(N*pi*sigma*sigma*0.25/phi);
+int M = int(L/rcut);
+double a=2*L/(2*n+1);
+double DrConstant = sqrt(2 * Dr * dt);
+double DConstant = sqrt(2 * D / dt);
+double BOXL=M*rcut;
+int ncell = M*M;
+int mapsiz = 4*ncell;
+double A = BOXL*BOXL;
 /***********  ***********/
 
-vector<int> list_(N);
-vector<double> Fx(N), Fy(N);
-vector<int> head(ncell + 1);
-vector<int> map_(mapsiz + 2);
+std::vector<int> list_(N);
+std::vector<double> Fx(N), Fy(N);
+std::vector<int> head(ncell + 1);
+std::vector<int> map_(mapsiz + 2);
 int ix, iy, iz, imap;
 
-vector<double> theta(N);
-vector<double> x(N), y(N);
-vector<double> vx(N);
-vector<double> vy(N);
+std::vector<double> theta(N);
+std::vector<double> x(N), y(N);
+std::vector<double> vx(N);
+std::vector<double> vy(N);
+std::vector<int> polyList;
+std::list<int> ascendingPolyList;
 
-mt19937 generator(time(NULL));
-normal_distribution<double> gau_dist(0.0, 1.0);
-uniform_real_distribution<double> uni_dist(-pi / 4, pi / 4);
+std::mt19937 generator(time(NULL));
+std::normal_distribution<double> gau_dist(0.0, 1.0);
+std::uniform_real_distribution<double> uni_dist(-pi / 4, pi / 4);
 
 
 /*******************sub function*****************/
@@ -84,7 +70,7 @@ void initialize_square_lattice()
 			else
 				y[nptl] = -L / 2.0 + j * a;
 
-			theta[nptl] = sqrt(2 * Dr * dt) * gau_dist(generator);
+			theta[nptl] = 0;//sqrt(2 * Dr * dt) * gau_dist(generator);
 			nptl++;
 		}
 	}
@@ -105,7 +91,7 @@ void maps()
 			imap = ( icell ( ix, iy) - 1 ) * 4;
 			map_[ imap + 1  ] = icell ( ix + 1, iy    );
 			map_[ imap + 2  ] = icell ( ix + 1, iy + 1);
-			map_[ imap + 3  ] = icell ( ix, iy + 1);
+			map_[ imap + 3  ] = icell ( ix	  , iy + 1);
 			map_[ imap + 4  ] = icell ( ix - 1, iy + 1);
 		}
 	}
@@ -114,23 +100,23 @@ void maps()
 void links (int it)
 {
 	//ZERO head OF CHAiN ARRAY
-	for (int icell = 1; icell <= ncell; icell++ )
+	for(int icell=1; icell <= ncell; icell++ )
 	{
 		head[icell] = -1;
 	}
 	double celli = M;
 	double cell  = BOXL / celli;
-	if ( cell < rcut )
-		cout << "cell SizE TOO SMALL FOR CUTOFF" << endl;
+	if( cell<rcut )
+		std::cout<< "cell SizE TOO SMALL FOR CUTOFF\n"<<std::endl;
 
 //SORT ALL ATOMS
-	for (int i = 0; i < N; i++)
+	for(int i=0; i<N; i++)
 	{
-		int icel =  1 + int ( ( x[i] / BOXL + 0.5 ) * celli )
-		            + int ( ( y[i] / BOXL + 0.5 ) * celli ) * M;
+		int icel =  1+int ( ( x[i]/BOXL + 0.5 ) * celli )
+		            + int ( ( y[i]/BOXL + 0.5 ) * celli ) * M;
 		list_[i] = head[icel];
 		head[icel] = i;
-		if (icel > M * M) cout << "error in icel" << it;
+		if(icel>M*M) std::cout<<"error in icel\n"<<it<<std::endl;
 	}
 }
 
@@ -143,17 +129,17 @@ void force()
 	double r2, r6;
 
 //    ** ZERO FORCES AND POTENTiAL **
-	for (int i = 0; i < N ; i++)
+	for(int i =0; iN ; i++)
 	{
 		Fx[i] = 0.0;
 		Fy[i] = 0.0;
 	}
 //    ** LOOP OVER ALL cellS **
-	for (int icell = 1; icell <= ncell; icell++)
+	for(int icell=1; icell<=ncell; icell++)
 	{
 		int  i = head[icell];
 //C       ** LOOP OVER ALL MOLECULES iN THE cell **
-		while ( i > -1 )
+		while( i >-1 )
 		{
 			xi = x[i];
 			yi = y[i];
@@ -161,14 +147,14 @@ void force()
 			Fyi = Fy[i];
 //C          ** LOOP OVER ALL MOLECULES BELOW i iN THE CURRENT cell **
 			int  j = list_[i];
-			while ( j > -1 )
+			while( j >-1 )
 			{
 				xij  = x[i] - x[j];
 				yij  = y[i] - y[j];
 
 				// periodic boundary conditions
-				xij  = xij - BOXL * rint(xij / BOXL);
-				yij  = yij - BOXL * rint(yij / BOXL);
+				xij  = xij - L * rint(xij / L);
+				yij  = yij - L * rint(yij / L);
 
 				rijsq = xij * xij + yij * yij ;
 				if ( rijsq < rcutsq )
@@ -225,14 +211,25 @@ void force()
 			i = list_[i];
 		}
 	}
+
 	for (int i = 0; i < N; i++)
 	{
 		Fx[i] = 8 * alpha * Fx[i];
 		Fy[i] = 8 * alpha * Fy[i];
 	}
+
+	for (size_t i = 0; i < polyList.size(); i++)
+	{
+		if (i!=0){
+			springForce(x, y, Fx, Fy, polyList[i], polyList[i-1], 1.0, 100); //spring force from previous particle in chain
+	  	}
+	  	if (i!=(N-1)){
+			springForce(x, y, Fx, Fy, polyList[i], polyList[i+1], 1.0, 100); //spring force from next particle in chain
+		}
+		
+	}
+	
 }
-double DrConstant = sqrt(2 * Dr * dt);
-double DConstant = sqrt(2 * D / dt);
 
 void update_position_angle()
 {
@@ -249,44 +246,51 @@ void update_position_angle()
 	}
 }
 
-void write_VMD_data(ostream& os)
+void write_VMD_data(std::ostream& os)
 {
-	os << N << endl;
-	os << "LM" << endl;
-	os.setf(ios::fixed, ios::floatfield);
+	os << N << std::endl;
+	os << "LM" << std::endl;
+	os.setf(std::ios::fixed, std::ios::floatfield);
 	os.precision(5);
 	for (int i = 0; i < N; i++)
 	{
-		os << "s " << x[i] << " " << y[i] << " " << theta[i] << endl;
+		os << "s " << x[i] << " " << y[i] << " " << theta[i] << std::endl;
 	}
 	os.flush();
 }
 
 int main(int argc, char *argv[])
 {
-	ofstream o("vmd_data.xyz");
-	ofstream out("data.xyz");
+	clock_t start = clock();
+	std::ofstream o("vmd_data.xyz");
+	std::ofstream out("data.xyz");
 
-	out << "  no of particles::" << N << "  separation: a:: " << a << "  rcut: " << rcut << flush << endl;
-	out << "boxlength::" << BOXL << "  M: " << M << "  cell size: L / M::" << L / M << "  cell size: BOXL / M::" << BOXL / M << flush << endl;
-	out << " sigma: " << sigma << " MAXIT: " << MAXIT << flush << endl;
-	out << "Pe: " << Pe << " phi: " << phi << " alpha: " << alpha << flush << endl;
+	out << "  no of particles::" << N << "  separation: a:: " << a << "  rcut: " << rcut << std::endl;
+	out << "boxlength::" << BOXL << "  M: " << M << "  cell size: L / M::" << L / M << "  cell size: BOXL / M::" << BOXL / M << std::endl;
+	out << " sigma: " << sigma << " MAXIT: " << MAXIT << std::endl;
+	out << "Pe: " << Pe << " phi: " << phi << " alpha: " << alpha << std::endl;
 
 	double frame = par_maxFrame;
 	int tn = MAXIT / frame;
 	
+    printf("Number of particles: %i \n", N);
 	if (std::experimental::filesystem::v1::exists("vmd_data_old.xyz")){
-	  extractConfig("vmd_data_old.xyz", x, y, theta);
+		extractConfig("vmd_data_old.xyz", x, y, theta);
+		// makePolymer("vmd_data_old.xyz", 51389, 0.45, 50, o, x, y, theta, polyList, ascendingPolyList);
 	}
 	else initialize_square_lattice();
 	maps();
+
 	for (int it = 0; it < MAXIT; it++)
 	{
 		links(it);
 		force();
-		if (it % tn == 0)
+
+		if (it % tn == 0){
 			write_VMD_data(o);
+			//writePolyVMD(o, x, y, theta, polyList, ascendingPolyList);
+		}
 		update_position_angle();
 	}
-	out << "Time elapsed: " << ( (double(clock()) - start) / CLOCKS_PER_SEC) << endl;
+	out << "Time elapsed: " << ( (double(clock()) - start) / CLOCKS_PER_SEC) << std::endl;
 }
